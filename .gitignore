@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/
+bot.log
+# working file from mine_corpus.py: raw, unscrubbed, never commit
+corpus_candidates.md

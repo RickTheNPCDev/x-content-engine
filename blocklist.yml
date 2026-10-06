@@ -1,0 +1,101 @@
+# Layer 1 of the confidentiality gate. Deterministic, runs before the model
+# sees anything, fails closed.
+#
+# hard  -> the substance is blocked. It never enters the content path, even if
+#          you marked it shareable. The bot shows you the match and offers a
+#          one-item override.
+# soft  -> flagged. Same override tap, but it is a "look at this", not a stop.
+#
+# Regexes are Python re, case-insensitive unless you write your own flags.
+# Editing this file changes behaviour with no code change. On Railway that
+# means a redeploy; locally, /reloadgate.
+
+hard:
+  - name: currency_amounts
+    why: revenue, pricing, or deal size
+    patterns:
+      - '[€$£]\s?\d'
+      - '\b\d[\d ,.]*\s?(k|m|bn)?\s?(€|\$|£|eur|usd|gbp)\b'
+      - '\b\d[\d ,.]*\s?(euros?|dollars?|pounds?)\b'
+
+  - name: revenue_and_runway
+    why: non-public company economics
+    patterns:
+      # "churn" is only financial with a metric word attached. Bare "users
+      # churn" is ordinary product talk and blocking it means tapping through
+      # an override every other drop.
+      - '\b(mrr|arr|run ?rate|runway|burn rate|gross margin|net margin|margins?|churn rate|cac|ltv|ebitda|p&l|top ?line|bottom ?line|revenue|turnover)\b'
+      - '\brev(enue)? ?share\b'
+
+  # A number next to a money word, with no currency symbol anywhere. This is how
+  # figures actually get written in a chat: "2m was the overall budget", "we took
+  # 10 points". Found by running the gate over real threads, where the symbol
+  # patterns above passed all of it clean. Add the money words of your own
+  # industry (per episode, per seat, per unit...) to these two lists.
+  - name: bare_figures_near_money_words
+    why: an amount is still an amount without a currency sign
+    patterns:
+      - '\b\d[\d.,]*\s?(k|m|bn)?\b[^.\n]{0,40}\b(budget|deal|round|raise|revenue|share|stake|equity|valuation|fee|salary|episode|per episode|upfront|advance)\b'
+      - '\b(budget|deal|round|raise|revenue|rev share|stake|equity|valuation|fee|salary|ticket|advance)\b[^.\n]{0,40}\b\d'
+
+  - name: cap_table
+    why: fundraising and ownership
+    patterns:
+      - '\b(cap table|pre-?money|post-?money|term sheet|safe note|liquidation preference|option pool|vesting|cliff|dilution|lead investor|ticket size|series [a-d]\b|seed round|bridge round|raising a)\b'
+
+  - name: deal_terms
+    why: client and partner commercial terms
+    patterns:
+      - '\b(rate card|retainer|day rate|per seat|purchase order|statement of work|\bsow\b|\bmsa\b|\bnda\b|\bloi\b|signed (a |the )?(deal|contract)|closed (a |the )?(deal|round))\b'
+
+  - name: confidentiality_markers
+    why: someone already said this is not public
+    patterns:
+      - '\b(confidential|under nda|do not share|internal only|embargo(ed)?|off the record|privileged)\b'
+
+  - name: credentials
+    why: secrets should never leave the machine, let alone the feed
+    patterns:
+      - '\bsk-[a-z0-9_-]{16,}'
+      - '\b(api[_ -]?key|secret[_ -]?key|access[_ -]?token|private key)\b'
+      - '-----begin [a-z ]*private key'
+
+  # Names you never want in a draft. Add them here, one per line, plain text.
+  # They are escaped and word-boundaried for you, so "Acme Corp" is safe to
+  # write literally. Deliberately empty in v1: fill these in when you have
+  # five minutes, it is the highest-value edit in this file.
+  - name: client_and_partner_names
+    why: client and partner identities
+    literals: []
+      # - Acme Corp
+
+  - name: investor_names
+    why: investor identities and fundraising signals
+    literals: []
+
+  - name: cofounder_and_team_names
+    why: named people, so nothing about them ships without a conscious tap
+    literals: []
+
+soft:
+  - name: project_internals
+    why: the projects are fine to discuss, their internals are not
+    patterns: []
+      # Codenames of internal projects. Case-sensitive is usually what you want
+      # when a codename is also an ordinary English word ("Atlas", "Orbit"):
+      # - '(?-i:\b(Atlas|Orbit)\b)'
+
+  - name: percentages
+    why: a number that could be a margin, a growth rate, or nothing at all
+    patterns:
+      - '\b\d{1,3}(\.\d+)?\s?%'
+
+  - name: headcount_and_people_moves
+    why: team changes read as company information
+    patterns:
+      - '\b(headcount|team of \d+|we are \d+ people|laid off|let go|fired|quit|resigned|stepped down)\b'
+
+  - name: loose_commercial
+    why: probably fine, worth a glance
+    patterns:
+      - '\b(valuation|discount|quote|pricing|invoice|client|customer|prospect|pipeline)\b'
