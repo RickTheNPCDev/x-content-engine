@@ -10,6 +10,7 @@ import pathlib
 
 from telegram import ForceReply, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
+from telegram.error import Conflict
 from telegram.ext import (
     Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters,
 )
@@ -532,6 +533,13 @@ def build_question() -> tuple[int, str]:
 
 async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """A handler that dies silently looks like a bot that ignored you."""
+    if isinstance(context.error, Conflict):
+        # Another process is polling the same token: a deploy overlapping the
+        # old container, or a second copy running somewhere. Polling retries on
+        # its own, so this is a log line, not a message. If it never stops,
+        # find the second copy.
+        log.warning("polling conflict: another instance is using this bot token")
+        return
     log.exception("handler failed", exc_info=context.error)
     if config.OWNER_CHAT_ID is None:
         return

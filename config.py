@@ -53,6 +53,22 @@ PROMPTS_DIR = ROOT / "prompts"
 QUESTION_LOOKBACK_DAYS = int(os.getenv("QUESTION_LOOKBACK_DAYS", "7"))
 
 
+def storage_warning() -> str | None:
+    """Non-fatal. On Railway, a DATA_DIR off the volume is wiped every deploy."""
+    if not os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+        return None
+    mount = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
+    if not mount:
+        return ("No Railway volume is attached. The database is wiped on every deploy. "
+                "Add a volume mounted at /data and set DATA_DIR=/data.")
+    try:
+        DATA_DIR.resolve().relative_to(pathlib.Path(mount).resolve())
+    except ValueError:
+        return (f"DATA_DIR is {DATA_DIR}, but the volume is mounted at {mount}. "
+                f"Set DATA_DIR={mount} or the database is wiped on every deploy.")
+    return None
+
+
 def validate() -> list[str]:
     """Returns a list of fatal problems. Empty list means good to boot."""
     problems = []

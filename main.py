@@ -50,6 +50,14 @@ def main() -> None:
     bot.register(app)
     worker.register(app)
 
+    storage = config.storage_warning()
+    if storage:
+        log.error(storage)
+        if config.OWNER_CHAT_ID is not None:
+            async def warn_owner(context) -> None:
+                await context.bot.send_message(config.OWNER_CHAT_ID, f"Storage warning: {storage}")
+            app.job_queue.run_once(warn_owner, when=5, name="storage_warning")
+
     log.info(
         "up. model=%s effort=%s transcribe=%s db=%s question=%02d:00 review=%02d:00 tz=%s",
         config.MODEL, config.EFFORT, config.TRANSCRIBE_PROVIDER, config.DB_PATH,

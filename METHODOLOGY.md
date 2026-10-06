@@ -103,7 +103,7 @@ in:
 
 - Fix anything with a `GATE WARNING` line: figures, deal terms, credentials.
 - Anonymise people and companies, especially anything recounting a private
-  conversation ("the ex-CEO of a big studio", not their name).
+  conversation ("a client's CTO", not their name).
 - Remove internal project codenames, or add them to `blocklist.yml` so the
   gate catches them in substance too.
 

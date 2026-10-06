@@ -30,7 +30,7 @@ When I say "done":
 2. Separate blocks with a line containing only ---
 3. Drop any block under about 80 words.
 4. Anonymise names of real people, clients, investors and companies I
-   mentioned in a private context ("a big studio's ex-CEO", not the name), and
+   mentioned in a private context ("a client's CTO", not the name), and
    remove any figures: amounts, prices, percentages, deal terms. List every
    change you made so I can check it.
 
