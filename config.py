@@ -54,19 +54,11 @@ QUESTION_LOOKBACK_DAYS = int(os.getenv("QUESTION_LOOKBACK_DAYS", "7"))
 
 
 def storage_warning() -> str | None:
-    """Non-fatal. On Railway, a DATA_DIR off the volume is wiped every deploy."""
-    if not os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+    """Non-fatal. In the container, a DATA_DIR off a volume is wiped every deploy."""
+    if not os.getenv("CONTENT_ENGINE_CONTAINER") or os.path.ismount(DATA_DIR):
         return None
-    mount = os.getenv("RAILWAY_VOLUME_MOUNT_PATH")
-    if not mount:
-        return ("No Railway volume is attached. The database is wiped on every deploy. "
-                "Add a volume mounted at /data and set DATA_DIR=/data.")
-    try:
-        DATA_DIR.resolve().relative_to(pathlib.Path(mount).resolve())
-    except ValueError:
-        return (f"DATA_DIR is {DATA_DIR}, but the volume is mounted at {mount}. "
-                f"Set DATA_DIR={mount} or the database is wiped on every deploy.")
-    return None
+    return (f"DATA_DIR ({DATA_DIR}) is not a mounted volume. The database is wiped on "
+            "every deploy. Run with -e DATA_DIR=/data -v content-engine-data:/data.")
 
 
 def validate() -> list[str]:

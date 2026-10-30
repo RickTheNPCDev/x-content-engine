@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+.venv/
+__pycache__/
+*.pyc
+data/
+bot.log
+corpus_candidates.md

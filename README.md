@@ -62,20 +62,41 @@ cp .env.example .env                            # then fill in the three keys
 First run: leave `OWNER_CHAT_ID` blank, message the bot, and it replies with your
 chat id. Put it in `.env` and restart. Every other chat is ignored.
 
-## Deploy to Railway
+## Deploy
 
-1. Push your private fork, then **New Project → Deploy from GitHub**.
-2. **Add a volume** and mount it at `/data`. You do not need a database
-   service: the database is a SQLite file on that volume. Railway's filesystem
-   is wiped on every deploy; without the volume you lose everything each push.
-3. Variables: `TELEGRAM_BOT_TOKEN`, `ANTHROPIC_API_KEY`, `FAL_KEY`,
-   `OWNER_CHAT_ID`, and `DATA_DIR=/data`. Set `TIMEZONE` (defaults to UTC).
-4. There is no HTTP server here. It is a long-polling worker, so do not generate
-   a domain and do not expect a health check to pass. `railway.json` sets the
-   start command; the `Procfile` says the same thing.
+Any small Linux box with Docker works: the bot idles at about 85 MB, so 512 MB of
+RAM is plenty. It needs outbound IPv4, because `fal.run` and `github.com` have no
+IPv6 address. That rules out IPv6-only plans. There is no HTTP server here, so it
+needs no domain, no open inbound port, and no health check.
+
+```
+git clone <your private repo> content-engine && cd content-engine
+cp .env.example .env && chmod 600 .env          # then fill in the keys
+docker build -t content-engine .
+docker run -d --name content-engine --restart unless-stopped --env-file .env \
+  -e DATA_DIR=/data -v content-engine-data:/data content-engine
+```
+
+To deploy a change: `git pull`, `docker build -t content-engine .`,
+`docker rm -f content-engine`, then the same `docker run`. The database and
+`context.md` live on the `content-engine-data` volume. If the volume is missing
+the bot warns you at boot, because everything would be wiped on the next deploy.
+Keep backups of that disk: the database exists nowhere else.
 
 Run exactly one instance. Two processes long-polling the same bot token will
 fight over updates.
+
+## Dependencies
+
+`requirements.txt` is what we ask for. `requirements.lock` is what gets installed,
+with every transitive package pinned and hash-checked. After changing
+`requirements.txt`, regenerate it, and leave a week's gap so a freshly hijacked
+release cannot land in the lock:
+
+```
+uv pip compile requirements.txt --generate-hashes --python-version 3.13 \
+  --exclude-newer "$(date -d '7 days ago' +%F)" -o requirements.lock
+```
 
 ## Commands
 

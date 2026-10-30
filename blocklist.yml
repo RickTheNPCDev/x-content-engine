@@ -7,8 +7,8 @@
 # soft  -> flagged. Same override tap, but it is a "look at this", not a stop.
 #
 # Regexes are Python re, case-insensitive unless you write your own flags.
-# Editing this file changes behaviour with no code change. On Railway that
-# means a redeploy; locally, /reloadgate.
+# Editing this file changes behaviour with no code change. In the container
+# that means a rebuild; locally, /reloadgate.
 
 hard:
   - name: currency_amounts
